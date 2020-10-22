@@ -21,7 +21,8 @@ docRouter.post('/create', async (req,res) => {
      jwt.verify(token, Conf.secret, async function(err, decoded) {
          if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
          const jabatan = decoded.user.jabatan;
-             if( jabatan !== ''){
+         console.log(jabatan)
+             if(jabatan !== 0){
                 try {
                     const {kategori, nomer, redaksi, tujuan, tanggal, status} = req.body;
             
@@ -156,7 +157,7 @@ docRouter.put('/all/update/:id', function (req, res) {
                 const {kategori, nomer, redaksi, tujuan, tanggal,status} = req.body;
                 const doc = await Doc.findById(req.params.id);
 
-                if (status == '1') {
+                if (status === 1) {
                     res.status(500).send(`Tidak bisa diubah karena Sudah Disetujui`);
 
                 } else {
@@ -171,7 +172,7 @@ docRouter.put('/all/update/:id', function (req, res) {
                     res.send(updateStatus);
                 }
             } else {
-                const {kategori, nomer, redaksi, tujuan, tanggal} = req.body;
+                const {kategori, nomer, redaksi, tujuan, tanggal,status} = req.body;
                 const doc = await Doc.findById(req.params.id);
 
                 if (doc) {
@@ -181,6 +182,8 @@ docRouter.put('/all/update/:id', function (req, res) {
                     doc.redaksi = redaksi;
                     doc.tanggal = tanggal
                     doc.tujuan = tujuan;
+                    doc.status = status;
+
             
                     const updateDatadoc = await doc.save()
             
@@ -196,6 +199,16 @@ docRouter.put('/all/update/:id', function (req, res) {
 //Delete doc By ID
 docRouter.delete('/all/:id', async (req,res) => {
 
+    //header apabila akan melakukan akses
+    var token = req.headers['x-access-token'];
+    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+
+    //verifikasi jwt
+    jwt.verify(token, Conf.secret, async function(err, decoded) {
+        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+        const jabatan = decoded.user.jabatan;
+            if( jabatan !== ''){
+
     const doc = await Doc.findById(req.params.id);
 
     if (doc) {
@@ -208,6 +221,8 @@ docRouter.delete('/all/:id', async (req,res) => {
             message: 'Doc not found' 
         })       
     }
+    }
 })
+});
 
 export default docRouter;

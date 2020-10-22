@@ -12,51 +12,134 @@ docRouter.use(bodyParser.json());
 
 //CREATE doc
 docRouter.post('/create', async (req,res) => {
-    try {
-        const {kategori, nomer, redaksi, tujuan, tanggal, status} = req.body;
 
-        const doc = new Doc({
-            kategori,
-            nomer,
-            tujuan,
-            redaksi,
-            tanggal,
-            status,
-        });
+     //header apabila akan melakukan akses
+     var token = req.headers['x-access-token'];
+     if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+     
+     //verifikasi jwt
+     jwt.verify(token, Conf.secret, async function(err, decoded) {
+         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+         const jabatan = decoded.user.jabatan;
+             if( jabatan !== ''){
+                try {
+                    const {kategori, nomer, redaksi, tujuan, tanggal, status} = req.body;
+            
+                    const doc = new Doc({
+                        kategori,
+                        nomer,
+                        tujuan,
+                        redaksi,
+                        tanggal,
+                        status : 0,
+                    });
+            
+                    const createDoc = await doc.save();
+            
+                    res.status(201).json(createDoc);
+                } catch (err) {
+                    console.log(err)
+                    res.status(500).json({ error: 'Doc creation failed'});
+                }   
+             } else {
+                 
+                 res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+             }
+         })
 
-        const createDoc = await doc.save();
 
-        res.status(201).json(createDoc);
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ error: 'Doc creation failed'});
-    }
+    
 });
 
 //READ all doc
 docRouter.get('/all', async (req,res) => {
-    const doc =  await Doc.find({});
 
-    if(doc && doc.length !== 0) {
-        res.json(doc)
-    } else {
-        res.status(404).json({
-            message: 'Doc not found'
-        });
-    }
+
+     //header apabila akan melakukan akses
+     var token = req.headers['x-access-token'];
+     if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+     
+     //verifikasi jwt
+     jwt.verify(token, Conf.secret, async function(err, decoded) {
+         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+         const jabatan = decoded.user.jabatan;
+             if( jabatan !== ''){
+                const doc =  await Doc.find({});
+
+                if(doc && doc.length !== 0) {
+                    res.json(doc)
+                } else {
+                    res.status(404).json({
+                        message: 'Doc not found'
+                    });
+                }        
+             } else {
+                 
+                 res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+             }
+         })
+
+   
 });
 
-//READ doc by ID
-docRouter.get('/all/:id', async (req,res) => {
-    const doc = await Doc.findById(req.params.id);
+//read documen status disetujui
+docRouter.get('/approvel', async (req,res) => {
 
-    if(doc) {
-        res.json(doc)
-    } else {
-        res.status(404).json({
-            message: 'Doc not found'
-        });
-    }
+    //header apabila akan melakukan akses
+    var token = req.headers['x-access-token'];
+    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+    
+    //verifikasi jwt
+    jwt.verify(token, Conf.secret, async function(err, decoded) {
+        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+        const jabatan = decoded.user.jabatan;
+            if( jabatan !== ''){
+                const doc =  await Doc.find({ "status":1 });
+
+                if(doc && doc.length !== 0) {
+                    res.json(doc)
+                } else {
+                    res.status(404).json({
+                        message: 'Doc not found'
+                    });
+                }
+            } else {
+                
+                res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+            }
+        })
+});
+
+
+//READ user by ID
+docRouter.get('/all/:id', async (req,res) => {
+
+    //header apabila akan melakukan akses
+    var token = req.headers['x-access-token'];
+    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+    
+    //verifikasi jwt
+    jwt.verify(token, Conf.secret, async function(err, decoded) {
+        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+        const jabatan = decoded.user.jabatan;
+            if( jabatan !== ''){
+                const doc = await Doc.findById(req.params.id);
+                    if(doc) {
+                        res.json(doc)
+                    } else {
+                        res.status(404).json({
+                            message: 'Doc not found'
+                        });
+                    }             
+            } else {
+                
+                res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+            }
+        })
+
+
+
+    
 });
 
 // Konfirmasi surat

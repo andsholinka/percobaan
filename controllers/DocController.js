@@ -72,8 +72,11 @@ docRouter.put('/all/update/:id', function (req, res) {
             if( jabatan == '0'){
                 const {kategori, nomer, redaksi, tujuan, tanggal,status} = req.body;
                 const doc = await Doc.findById(req.params.id);
-                if (doc) {
 
+                if (status == '1') {
+                    res.status(500).send(`Tidak bisa diubah karena Sudah Disetujui`);
+
+                } else {
                     doc.kategori = kategori;
                     doc.nomer = nomer;
                     doc.redaksi = redaksi;
@@ -83,8 +86,6 @@ docRouter.put('/all/update/:id', function (req, res) {
                     const updateStatus = await doc.save()
 
                     res.send(updateStatus);
-                } else {
-                    res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
                 }
             } else {
                 const {kategori, nomer, redaksi, tujuan, tanggal} = req.body;

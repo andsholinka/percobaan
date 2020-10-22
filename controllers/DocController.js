@@ -33,7 +33,7 @@ docRouter.post('/create', async (req,res) => {
     }
 });
 
-//READ all data users
+//READ all doc
 docRouter.get('/all', async (req,res) => {
     const doc =  await Doc.find({});
 
@@ -46,7 +46,7 @@ docRouter.get('/all', async (req,res) => {
     }
 });
 
-//READ user by ID
+//READ doc by ID
 docRouter.get('/all/:id', async (req,res) => {
     const doc = await Doc.findById(req.params.id);
 
@@ -70,9 +70,15 @@ docRouter.put('/all/update/:id', function (req, res) {
         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
         const jabatan = decoded.user.jabatan;
             if( jabatan == '0'){
-                const {status} = req.body;
+                const {kategori, nomer, redaksi, tujuan, tanggal,status} = req.body;
                 const doc = await Doc.findById(req.params.id);
                 if (doc) {
+
+                    doc.kategori = kategori;
+                    doc.nomer = nomer;
+                    doc.redaksi = redaksi;
+                    doc.tanggal = tanggal
+                    doc.tujuan = tujuan;
                     doc.status = status;
                     const updateStatus = await doc.save()
 
@@ -100,7 +106,24 @@ docRouter.put('/all/update/:id', function (req, res) {
                     res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
                 }
             }
+    })
+});
+
+//Delete doc By ID
+docRouter.delete('/all/:id', async (req,res) => {
+
+    const doc = await Doc.findById(req.params.id);
+
+    if (doc) {
+        await doc.remove();
+        res.json({
+            message: 'Doc removed'
         })
-    });
+    } else {
+        res.status(404).json({
+            message: 'Doc not found' 
+        })       
+    }
+})
 
 export default docRouter;

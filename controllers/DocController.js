@@ -226,21 +226,23 @@ docRouter.delete('/all/:id', async (req,res) => {
     jwt.verify(token, Conf.secret, async function(err, decoded) {
         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
         const jabatan = decoded.user.jabatan;
-            if( jabatan !== ''){
+            if( jabatan == 1){
 
-    const doc = await Doc.findById(req.params.id);
+                const doc = await Doc.findById(req.params.id);
 
-    if (doc) {
-        await doc.remove();
-        res.json({
-            message: 'Doc removed'
-        })
-    } else {
-        res.status(404).json({
-            message: 'Doc not found' 
-        })       
-    }
-    }
+                if (doc) {
+                    await doc.remove();
+                    res.json({
+                        message: 'Doc removed'
+                    })
+                } else {
+                    res.status(404).json({
+                        message: 'Doc not found' 
+                    })       
+                }
+            } else {
+                res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+            }
 })
 });
 

@@ -34,7 +34,7 @@ userRouter.post('/register', async (req, res) => {
                     },
                         function (err, user) {
                         if (err) return res.status(500).send("There was a problem registering the user.")
-                        res.status(200).send(`${user} Berhasil Daftar`);
+                        res.status(200).send(`${user} Success`);
                         }); 
                 } 
                 catch(error){
@@ -160,7 +160,7 @@ jwt.verify(token, Conf.secret, async function(err, decoded) {
             if (user) {
                 await user.remove();
                 res.json({
-                    message: 'Data removed'
+                    message: 'User Removed'
                 })
             } else {
                 res.status(404).json({

@@ -32,7 +32,7 @@ const DocSchema = mongoose.Schema(
         }
     },
     {
-        timestamps: false,
+        timestamps: true,
     }
 );
 

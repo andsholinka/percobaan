@@ -24,7 +24,7 @@ docRouter.post('/create', async (req,res) => {
          console.log(jabatan)
              if(jabatan !== 0){
                 try {
-                    const {kategori, nomer, redaksi, tujuan, tanggal, status} = req.body;
+                    const {kategori, nomer, redaksi, tujuan, tanggal, status, keterangan} = req.body;
             
                     const doc = new Doc({
                         kategori,
@@ -33,6 +33,7 @@ docRouter.post('/create', async (req,res) => {
                         redaksi,
                         tanggal,
                         status : 0,
+                        keterangan,
                     });
             
                     const createDoc = await doc.save();
@@ -154,10 +155,11 @@ docRouter.put('/all/update/:id', function (req, res) {
         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
         const jabatan = decoded.user.jabatan;
             if( jabatan == '0'){
-                const {kategori, nomer, redaksi, tujuan, tanggal,status} = req.body;
+                const {kategori, nomer, redaksi, tujuan, tanggal,status,keterangan} = req.body;
                 const doc = await Doc.findById(req.params.id);
-
-                if (status === 1) {
+                
+                if (doc.status == 1) {
+                    console.log(doc.status)
                     res.status(500).send(`Tidak bisa diubah karena Sudah Disetujui`);
 
                 } else {
@@ -167,31 +169,48 @@ docRouter.put('/all/update/:id', function (req, res) {
                     doc.tanggal = tanggal
                     doc.tujuan = tujuan;
                     doc.status = status;
+                    doc.keterangan = keterangan;
                     const updateStatus = await doc.save()
 
                     res.send(updateStatus);
                 }
             } else {
-                const {kategori, nomer, redaksi, tujuan, tanggal,status} = req.body;
+                const {kategori, nomer, redaksi, tujuan, tanggal,keterangan} = req.body;
                 const doc = await Doc.findById(req.params.id);
 
-                if (doc) {
+                if (doc.status == 1) {
+                    console.log(doc.status)
+                    res.status(500).send(`Tidak bisa diubah karena Sudah Disetujui`);
 
+                } else {
                     doc.kategori = kategori;
                     doc.nomer = nomer;
                     doc.redaksi = redaksi;
                     doc.tanggal = tanggal
                     doc.tujuan = tujuan;
-                    doc.status = status;
+                    doc.keterangan = keterangan;
+                    const updateStatus = await doc.save()
 
-            
-                    const updateDatadoc = await doc.save()
-            
-                    res.send(updateDatadoc);
-
-                } else {
-                    res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+                    res.send(updateStatus);
                 }
+                // if (doc) {
+
+                //     doc.kategori = kategori;
+                //     doc.nomer = nomer;
+                //     doc.redaksi = redaksi;
+                //     doc.tanggal = tanggal
+                //     doc.tujuan = tujuan;
+                //     doc.keterangan = keterangan
+                //     // doc.status = status;
+
+            
+                //     const updateDatadoc = await doc.save()
+            
+                //     res.send(updateDatadoc);
+
+                // } else {
+                //     res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+                // }
             }
     })
 });

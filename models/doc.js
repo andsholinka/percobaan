@@ -25,6 +25,10 @@ const DocSchema = mongoose.Schema(
         status: {
             type: Number,
             required: true,         
+        },
+        keterangan: {
+            type: String,
+            required: true,         
         }
     },
     {

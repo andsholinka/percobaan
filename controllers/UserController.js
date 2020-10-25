@@ -14,121 +14,196 @@ router.use(bodyParser.json());
 
 //CREATE user
 userRouter.post('/register', async (req, res) => {
-    try{
-        var hashedPassword = bcrypt.hashSync(req.body.password, 8);
+    //header apabila akan melakukan akses
+    var token = req.headers['x-access-token'];
+    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+    
+    //verifikasi jwt
+    jwt.verify(token, Conf.secret, async function(err, decoded) {
+        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+        const jabatan = decoded.user.jabatan;
+        console.log(jabatan)
+            if(jabatan == 1){
+                try{
+                    var hashedPassword = bcrypt.hashSync(req.body.password, 8);
+            
+                    User.create({
+                        username : req.body.username,
+                        password : hashedPassword,
+                        jabatan : req.body.jabatan
+                    },
+                        function (err, user) {
+                        if (err) return res.status(500).send("There was a problem registering the user.")
+                        res.status(200).send(`${user} Berhasil Daftar`);
+                        }); 
+                } 
+                catch(error){
+                    res.status(500).json({ error: error})
+                }
+            } else {
+                res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+            }
+        })
 
-        User.create({
-            username : req.body.username,
-            password : hashedPassword,
-            jabatan : req.body.jabatan
-        },
-            function (err, user) {
-            if (err) return res.status(500).send("There was a problem registering the user.")
-            res.status(200).send(`${user} Berhasil Daftar`);
-            }); 
-    } 
-    catch(error){
-        res.status(500).json({ error: error})
-    }
 })
 
 //READ all data users
 userRouter.get('/datauser', async (req,res) => {
-    const user =  await User.find({});
+//header apabila akan melakukan akses
+var token = req.headers['x-access-token'];
+if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
 
-    if(user && user.length !== 0) {
-        res.json(user)
-    } else {
-        res.status(404).json({
-            message: 'Users not found'
-        });
-    }
+//verifikasi jwt
+jwt.verify(token, Conf.secret, async function(err, decoded) {
+    if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    const jabatan = decoded.user.jabatan;
+    console.log(jabatan)
+        if(jabatan == 1){
+            const user =  await User.find({});
+            if(user && user.length !== 0) {
+                res.json(user)
+            } else {
+                res.status(404).json({
+                    message: 'Users not found'
+                });
+            }
+        } else {
+            res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+        }
+    })
 });
 
 //READ user by ID
 userRouter.get('/datauser/:id', async (req,res) => {
-    const user = await User.findById(req.params.id);
+//header apabila akan melakukan akses
+var token = req.headers['x-access-token'];
+if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
 
-    if(user) {
-        res.json(user)
-    } else {
-        res.status(404).json({
-            message: 'User not found'
-        });
-    }
+//verifikasi jwt
+jwt.verify(token, Conf.secret, async function(err, decoded) {
+    if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    const jabatan = decoded.user.jabatan;
+    console.log(jabatan)
+        if(jabatan == 1){
+            const user = await User.findById(req.params.id);
+
+            if(user) {
+                res.json(user)
+            } else {
+                res.status(404).json({
+                    message: 'User not found'
+                });
+            }
+        } else {
+            res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+        }
+    })
+
+
 });
 
 //UPDATE data user
 userRouter.put('/datauser/:id', async (req,res) => {
-    const {username, password, nbelakang, jabatan} = req.body;
+    //header apabila akan melakukan akses
+var token = req.headers['x-access-token'];
+if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
 
-    const user = await User.findById(req.params.id);
+//verifikasi jwt
+jwt.verify(token, Conf.secret, async function(err, decoded) {
+    if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    const jabatan = decoded.user.jabatan;
+    console.log(jabatan)
+        if(jabatan == 1){
+            const {username, password, nbelakang, jabatan} = req.body;
 
-    if (user) {
+            const user = await User.findById(req.params.id);
+        
+            if (user) {
+        
+                var saltRounds = 10;
+                const hashedPw = await bcrypt.hash(password, saltRounds);
+                user.username = username;
+                user.password = hashedPw;
+                user.nbelakang = nbelakang;
+                user.jabatan = jabatan;
+        
+                const updateDatauser = await user.save()
+        
+                res.send(updateDatauser);
+            } else {
+                res.status(404).json({
+                    message: 'User not found'
+                })
+            }
+        } else {
+            res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+        }
+    })
 
-        var saltRounds = 10;
-        const hashedPw = await bcrypt.hash(password, saltRounds);
-        user.username = username;
-        user.password = hashedPw;
-        user.nbelakang = nbelakang;
-        user.jabatan = jabatan;
 
-        const updateDatauser = await user.save()
-
-        res.send(updateDatauser);
-    } else {
-        res.status(404).json({
-            message: 'User not found'
-        })
-    }
 })
 
 //DELETE user by ID
 userRouter.delete('/datauser/:id', async (req,res) => {
+    //header apabila akan melakukan akses
+var token = req.headers['x-access-token'];
+if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
 
-    const user = await User.findById(req.params.id);
+//verifikasi jwt
+jwt.verify(token, Conf.secret, async function(err, decoded) {
+    if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+    const jabatan = decoded.user.jabatan;
+    console.log(jabatan)
+        if(jabatan == 1){
+            const user = await User.findById(req.params.id);
 
-    if (user) {
-        await user.remove();
-        res.json({
-            message: 'Data removed'
-        })
-    } else {
-        res.status(404).json({
-            message: 'User not found' 
-        })       
-    }
+            if (user) {
+                await user.remove();
+                res.json({
+                    message: 'Data removed'
+                })
+            } else {
+                res.status(404).json({
+                    message: 'User not found' 
+                })       
+            }
+        } else {
+            res.status(500).send(`${decoded.user.username} Tidak Memiliki Wewenang`);
+        }
+    })
+
+
 })
 
 //DELETE all data users
-userRouter.delete('/datauser', async (req, res) => {
-    const user = await User.deleteMany();
+// userRouter.delete('/datauser', async (req, res) => {
+//     const user = await User.deleteMany();
 
-    if (user) {
-        res.json({
-        message: 'all users removed'
-        })
-    } else {
-        res.status(404).json({
-        message: 'user not found'
-        })
-    }
-})
+//     if (user) {
+//         res.json({
+//         message: 'all users removed'
+//         })
+//     } else {
+//         res.status(404).json({
+//         message: 'user not found'
+//         })
+//     }
+// })
 
 //DELETE all data users
-userRouter.delete('/transaksi', async (req, res) => {
-    const cashier = await Cashier.deleteMany();
+// userRouter.delete('/transaksi', async (req, res) => {
+//     const cashier = await Cashier.deleteMany();
 
-    if (cashier) {
-        res.json({
-        message: 'all transaksi removed'
-        })
-    } else {
-        res.status(404).json({
-        message: 'transaksi not found'
-        })
-    }
-})
+//     if (cashier) {
+//         res.json({
+//         message: 'all transaksi removed'
+//         })
+//     } else {
+//         res.status(404).json({
+//         message: 'transaksi not found'
+//         })
+//     }
+// })
 
 //login
 userRouter.post('/login', async (req, res) => {
@@ -171,172 +246,171 @@ userRouter.post('/login', async (req, res) => {
     }
 })
 
+export default userRouter;
 
 // check data login
-userRouter.get('/check', async (req, res) => {
+// userRouter.get('/check', async (req, res) => {
     
-    var token = req.headers['x-access-token'];
-    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+//     var token = req.headers['x-access-token'];
+//     if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
     
-    //verifikasi jwt
-    jwt.verify(token, Conf.secret, function(err, decoded) {
-        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
-        // const jabatan = decoded.jabatan;
-        // console.log(jabatan);
-        res.status(200).send(decoded);
-    });
-});
+//     //verifikasi jwt
+//     jwt.verify(token, Conf.secret, function(err, decoded) {
+//         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+//         // const jabatan = decoded.jabatan;
+//         // console.log(jabatan);
+//         res.status(200).send(decoded);
+//     });
+// });
 
 
 
-// Mengambil uang ( hanya BOS )
-userRouter.post('/mengambil-uang', function(req, res) {
-    //header apabila akan melakukan akses
-    var token = req.headers['x-access-token'];
-    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+// // Mengambil uang ( hanya BOS )
+// userRouter.post('/mengambil-uang', function(req, res) {
+//     //header apabila akan melakukan akses
+//     var token = req.headers['x-access-token'];
+//     if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
     
-    //verifikasi jwt
-    jwt.verify(token, Conf.secret, function(err, decoded) {
-        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
-        const jabatan = decoded.user.jabatan;
-        console.log(decoded);
-            if( jabatan != '0'){
-            Cashier.create({
-                "jtransaksi":`${decoded.user.nbelakang} Mengambil Uang Status Tidak Memiliki Wewenang`
+//     //verifikasi jwt
+//     jwt.verify(token, Conf.secret, function(err, decoded) {
+//         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+//         const jabatan = decoded.user.jabatan;
+//         console.log(decoded);
+//             if( jabatan != '0'){
+//             Cashier.create({
+//                 "jtransaksi":`${decoded.user.nbelakang} Mengambil Uang Status Tidak Memiliki Wewenang`
 
-            },function(err,user)
-            {
-            if(err) return res.status(500).send("There was a problem transaksi.")
-            });
+//             },function(err,user)
+//             {
+//             if(err) return res.status(500).send("There was a problem transaksi.")
+//             });
 
-            res.status(200).send(`${decoded.user.nbelakang} Tidak Memiliki Wewenang`);
-            }else{
+//             res.status(200).send(`${decoded.user.nbelakang} Tidak Memiliki Wewenang`);
+//             }else{
 
-            Cashier.create({
-                "jtransaksi":`${decoded.user.nbelakang} Mengambil Uang Status Bisa Melakukan`
+//             Cashier.create({
+//                 "jtransaksi":`${decoded.user.nbelakang} Mengambil Uang Status Bisa Melakukan`
 
-            },function(err,user)
-            {
-            if(err) return res.status(500).send("There was a problem transaksi.")
-            });
-            res.status(200).send(`${decoded.user.nbelakang} Bisa Melakukan`);
-        }
-    });
-});
+//             },function(err,user)
+//             {
+//             if(err) return res.status(500).send("There was a problem transaksi.")
+//             });
+//             res.status(200).send(`${decoded.user.nbelakang} Bisa Melakukan`);
+//         }
+//     });
+// });
 
 // Memasukkan uang ke Cashier
-userRouter.post('/input-money',async (req, res) => {
-    //header apabila akan melakukan akses
-    var token = req.headers['x-access-token'];
-    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+// userRouter.post('/input-money',async (req, res) => {
+//     //header apabila akan melakukan akses
+//     var token = req.headers['x-access-token'];
+//     if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
     
-    //verifikasi jwt
-    jwt.verify(token, Conf.secret, function(err, decoded) {
-        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+//     //verifikasi jwt
+//     jwt.verify(token, Conf.secret, function(err, decoded) {
+//         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
 
-                Cashier.create({
-                    "jtransaksi":`${decoded.user.nbelakang} Masukin Uang Status Bisa Melakukan`
+//                 Cashier.create({
+//                     "jtransaksi":`${decoded.user.nbelakang} Masukin Uang Status Bisa Melakukan`
 
-                },function(err,user)
-                {
-                if(err) return res.status(500).send("There was a problem transaksi.")
-                });
+//                 },function(err,user)
+//                 {
+//                 if(err) return res.status(500).send("There was a problem transaksi.")
+//                 });
 
-                    res.status(200).send(`${decoded.user.nbelakang} Bisa Melakukan`);
-    });
-});
+//                     res.status(200).send(`${decoded.user.nbelakang} Bisa Melakukan`);
+//     });
+// });
 
 // cek saldo
-userRouter.post('/cek-saldo', function(req, res) {
-    //header apabila akan melakukan akses
-    var token = req.headers['x-access-token'];
-    if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
+// userRouter.post('/cek-saldo', function(req, res) {
+//     //header apabila akan melakukan akses
+//     var token = req.headers['x-access-token'];
+//     if (!token) return res.status(401).send({ auth: false, message: 'No token provided.' });
     
-    //verifikasi jwt
-    jwt.verify(token, Conf.secret, function(err, decoded) {
-        if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
-        const jabatan = decoded.user.jabatan;
-        if(jabatan == '2'){
+//     //verifikasi jwt
+//     jwt.verify(token, Conf.secret, function(err, decoded) {
+//         if (err) return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
+//         const jabatan = decoded.user.jabatan;
+//         if(jabatan == '2'){
 
-            Cashier.create({
-                "jtransaksi":`${decoded.user.nbelakang} Melihat Saldo total Status Tidak Memiliki wewenang`
+//             Cashier.create({
+//                 "jtransaksi":`${decoded.user.nbelakang} Melihat Saldo total Status Tidak Memiliki wewenang`
 
-            },function(err,user)
-            {
-            if(err) return res.status(500).send("There was a problem transaksi.")
-            });
+//             },function(err,user)
+//             {
+//             if(err) return res.status(500).send("There was a problem transaksi.")
+//             });
 
 
-            res.status(200).send(`${decoded.user.nbelakang} Tidak Memiliki Wewenang`);
-        }else{
+//             res.status(200).send(`${decoded.user.nbelakang} Tidak Memiliki Wewenang`);
+//         }else{
 
-            Cashier.create({
-                "jtransaksi":`${decoded.user.nbelakang} Melihat Saldo Total Status Bisa Melakukan`
+//             Cashier.create({
+//                 "jtransaksi":`${decoded.user.nbelakang} Melihat Saldo Total Status Bisa Melakukan`
 
-            },function(err,user)
-            {
-            if(err) return res.status(500).send("There was a problem transaksi.")
-            });
+//             },function(err,user)
+//             {
+//             if(err) return res.status(500).send("There was a problem transaksi.")
+//             });
 
-            res.status(200).send(`${decoded.user.nbelakang} Bisa Melakukan`);
-        }
-    });
-});
+//             res.status(200).send(`${decoded.user.nbelakang} Bisa Melakukan`);
+//         }
+//     });
+// });
 
 //update jabaatn
-userRouter.put('/update/:id', async (req,res) => {
-    const {nbelakang,jabatan,username, password} = req.body;
+// userRouter.put('/update/:id', async (req,res) => {
+//     const {nbelakang,jabatan,username, password} = req.body;
 
-    const user = await User.findById(req.params.id);
+//     const user = await User.findById(req.params.id);
 
-        if(user){
-            if(username === undefined){
-                user.username = user.username;
-            }else{
-                user.username= username;
-            }
+//         if(user){
+//             if(username === undefined){
+//                 user.username = user.username;
+//             }else{
+//                 user.username= username;
+//             }
 
-            if(jabatan === undefined){
-                user.jabatan = user.jabatan;
-            }else{
-                user.jabatan= jabatan;
-            }
+//             if(jabatan === undefined){
+//                 user.jabatan = user.jabatan;
+//             }else{
+//                 user.jabatan= jabatan;
+//             }
 
-            if(nbelakang === undefined){
-                user.nbelakang = user.nbelakang;
-            }else{
-                user.nbelakang= nbelakang;
-            }
+//             if(nbelakang === undefined){
+//                 user.nbelakang = user.nbelakang;
+//             }else{
+//                 user.nbelakang= nbelakang;
+//             }
 
-            if(password === undefined){
-                user.password = user.password;
-            }else{
-                var saltRounds =10;
-                const hashedPw = await bcrypt.hash(password, saltRounds);
-                user.password = hashedPw;
-            }
-            const updateUser = await user.save();
+//             if(password === undefined){
+//                 user.password = user.password;
+//             }else{
+//                 var saltRounds =10;
+//                 const hashedPw = await bcrypt.hash(password, saltRounds);
+//                 user.password = hashedPw;
+//             }
+//             const updateUser = await user.save();
 
-            res.json(updateUser);
+//             res.json(updateUser);
 
-        }else{
-            res.status(404).json({
-                massage :'User not found'
-            })
-        }
-});
+//         }else{
+//             res.status(404).json({
+//                 massage :'User not found'
+//             })
+//         }
+// });
 
-//menampilkan seluruh aktivitas kasir
-userRouter.get('/aktivitas-kasir', async (req,res) => {
-    const Aktivitas_Kasir = await Cashier.find({});
+// //menampilkan seluruh aktivitas kasir
+// userRouter.get('/aktivitas-kasir', async (req,res) => {
+//     const Aktivitas_Kasir = await Cashier.find({});
 
-    if(Aktivitas_Kasir && Aktivitas_Kasir.length !== 0){
-        res.json(Aktivitas_Kasir)
-    }else{
-        res.status(404).json({
-            message:"Aktivitas Kasir not found"
-        })
-    }
-} );
-
-export default userRouter;
+//     if(Aktivitas_Kasir && Aktivitas_Kasir.length !== 0){
+//         res.json(Aktivitas_Kasir)
+//     }else{
+//         res.status(404).json({
+//             message:"Aktivitas Kasir not found"
+//         })
+//     }
+// } );
